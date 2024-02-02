@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Text Generation App</title>
+    <style>
+      .loader {
+        border: 16px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 16px solid #3498db;
+        width: 120px;
+        height: 120px;
+        -webkit-animation: spin 2s linear infinite; /* Safari */
+        animation: spin 2s linear infinite;
+      }
+      
+      /* Safari */
+      @-webkit-keyframes spin {
+        0% { -webkit-transform: rotate(0deg); }
+        100% { -webkit-transform: rotate(360deg); }
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Text Generation</h1>
+    <form id="generateForm">
+      <label for="code">Enter Code:</label><br />
+      <textarea id="code" name="code" rows="10" cols="50"></textarea><br /><br />
+
+      <label for="prompt">Enter the name of the algorithm:</label><br />
+      <input type="text" id="prompt" name="prompt" /><br /><br />
+
+      <input type="submit" value="Generate" />
+    </form>
+
+    <div id="output">
+      <!-- Generated text will appear here -->
+    </div>
+
+    <div id="loading" style="display: none">
+      <p>Generating text... <div class="loader"></div></p>
+    </div>
+    <!-- Loading indicator -->
+    
+    <script>
+      document
+        .getElementById("generateForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          generateText();
+        });
+
+      function generateText() {
+        const codeText = document.getElementById("code").value;
+        const promptText = document.getElementById("prompt").value;
+        const outputDiv = document.getElementById("output");
+        const loadingDiv = document.getElementById("loading");
+
+        // Show loading indicator
+        loadingDiv.style.display = "block";
+        outputDiv.innerText = ""; // Clear previous output
+
+        fetch("/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ code: codeText, prompt: promptText }),
+        })
+          .then((response) => {
+            console.log("Response", response);
+            if (response.ok) {
+              return response.json(); // Parse the JSON body
+            } else {
+              throw new Error("Network response was not ok.");
+            }
+          })
+          .then((jsonResponse) => {
+            console.log("JSON Response", jsonResponse);
+            startIndex = jsonResponse.response.indexOf("{");
+            endIndex = jsonResponse.response.indexOf("}") + 1;
+            jsonData = JSON.parse(
+              jsonResponse.response.substring(startIndex, endIndex)
+            );
+            let output = `Result: ${jsonData.Result}`;
+            outputDiv.innerText = output;
+            loadingDiv.style.display = "none";
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            loadingDiv.style.display = "none";
+            outputDiv.innerText = "Error generating text.";
+          })
+          .finally(() => {
+            // Hide loading indicator when fetch operation completes (success or error)
+            loadingDiv.style.display = "none";
+          });
+      }
+    </script>
+  </body>
+</html>
